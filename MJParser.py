@@ -413,6 +413,12 @@ class entry(_MJElement):
         else:
             return (lat, lon)
 
+    def timezone(self):
+        """
+        Return the timezone value.
+        """
+        return (
+            self.xml.getElementsByTagName('time_zone')[0].firstChild.wholeText )
 
     def hierarchy(self, limit='journals', level=0):
         """
