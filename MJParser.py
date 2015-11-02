@@ -373,6 +373,47 @@ class entry(_MJElement):
         return int(
             self.xml.getElementsByTagName('word_count')[0].firstChild.wholeText)
 
+    def latitude(self):
+        """
+        latitude will return a floating point value of the latitude where the
+        entry was created. If there is no data, this function will return None.
+        """
+        locElement = self.xml.getElementsByTagName('location')
+        if locElement:
+            latitude = float( locElement[0].getAttribute('latitude') )
+            return latitude
+        else:
+            return None
+
+    def longitude(self):
+        """
+        longitude will return a floating point value of the latitude where the
+        entry was created. If there is no data, this function will return None.
+        """
+        locElement = self.xml.getElementsByTagName('location')
+        if locElement:
+            longitude = float( locElement[0].getAttribute('longitude') )
+            return longitude
+        else:
+            return None
+
+    def location(self):
+        """
+        location will return a tuple containing: (latitude, longitude) of the
+        location the entry was created. If the location data is non-existent,
+        then this function will return None.
+
+        This simply makes calls to the latitude and longitude functions.
+        """
+
+        lat = self.latitude()
+        lon = self.longitude()
+
+        if lat == None: return None
+        else:
+            return (lat, lon)
+
+
     def hierarchy(self, limit='journals', level=0):
         """
         hierarchy will print the hierarchy of the MacJournal journals and
