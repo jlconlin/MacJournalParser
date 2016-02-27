@@ -11,7 +11,8 @@ import xml.dom.minidom
 import gzip
 import collections
 import datetime
-import dateutil.parser      # Useful so I don't have to create a parser
+# import dateutil.parser      # Useful so I don't have to create a parser
+
 
 class mjdoc(object):
     """
@@ -24,8 +25,8 @@ class mjdoc(object):
         self.verbose = verbose
 
         if not os.path.isdir(path):
-            raise OSError("The MacJournal document {} doesn't exist".\
-                format(path))
+            raise OSError("The MacJournal document {} doesn't exist".
+                          format(path))
 
         # Set up some paths
         self.path = os.path.normpath(path)
@@ -37,6 +38,7 @@ class mjdoc(object):
 
         # Get the xml index
         self.indexPath = os.path.join(self.path, "index.mjml.gz")
+        print(self.indexPath)
 
         gz = gzip.GzipFile(self.indexPath, 'r')
         self.index = xml.dom.minidom.parse(gz)
@@ -50,15 +52,19 @@ class mjdoc(object):
         children = self.bookcase.getElementsByTagName('children')[0]
         for child in children.childNodes:
             J = _childFactory(child, Parent=self, verbose=self.verbose,
-                **kwargs)
+                              **kwargs)
             self.Journals[J.name] = J
 
     def __repr__(self): return self.path
 
     def FullName(self): return None
+
     def RelativePath(self): return self.rel_path
+
     def AbsolutePath(self): return self.abs_path
+
     def RealPath(self): return self.abs_path
+
     def keywords(self): return []
 
     def hierarchy(self, limit='journals'):
@@ -95,8 +101,9 @@ class mjdoc(object):
         """
         xmlfile = open(filename, 'w')
         xmlfile.write(self.macjournalml.toprettyxml(indent='    ',
-            encoding='utf-8'))
+                                                    encoding='utf-8'))
         xmlfile.close()
+
 
 def _childFactory(xml, Parent, verbose=False):
     """
@@ -131,6 +138,7 @@ def _childFactory(xml, Parent, verbose=False):
             "I don't know how to deal with child type: {}".format(nodeName))
         return None
 
+
 class _MJElement(object):
     """
     _MJElement is a base class for all the MacJournal elements.  The elements
@@ -151,14 +159,16 @@ class _MJElement(object):
         # Get the dates of the MacJournal element
         for attr in ['date', 'created', 'modified']:
             dateNode = [node for node in self._childNodes
-                if node.nodeName == attr][0]
+                        if node.nodeName == attr][0]
             setattr(self, attr,
-                dateutil.parser.parse(dateNode.firstChild.nodeValue))
+                    datetime.datetime.strptime(dateNode.firstChild.nodeValue))
 
     def FullName(self):
         name = self.Parent.FullName()
-        if name: return "{}/{}".format(name, self.name)
-        else: return self.name
+        if name:
+            return "{}/{}".format(name, self.name)
+        else:
+            return self.name
 
     def RelativePath(self):
         """
@@ -181,7 +191,8 @@ class _MJElement(object):
         """
         if self._realpath:
             return os.path.join(self.Parent.RealPath(), self._realpath)
-        else: return self.Parent.RealPath()
+        else:
+            return self.Parent.RealPath()
 
     def keywords(self):
         """
@@ -189,10 +200,12 @@ class _MJElement(object):
         from the Parent.
         """
         # Don't recalculate keywords if they are already known
-        if hasattr(self, '_keywords'): return self._keywords
+        if hasattr(self, '_keywords'):
+            return self._keywords
 
         # Get parent keywords
-        self._keywords = self.Parent.keywords()
+#       self._keywords = self.Parent.keywords()
+        self._keywords = []
 
         if hasattr(self, "_keywordsElements"):
             keywordElements = (
@@ -208,7 +221,8 @@ class _MJElement(object):
         return self._keywords
 
     def MakeLaTeX(self, texdir):
-        raise NotImplementeError("MakeLaTeX")
+        raise NotImplementedError("MakeLaTeX")
+
 
 class journal(_MJElement):
     """
@@ -243,11 +257,13 @@ class journal(_MJElement):
         if children:
             for childNode in children[0].childNodes:
                 child = _childFactory(childNode, Parent=self,
-                    verbose=self.verbose, **kwargs)
+                                      verbose=self.verbose, **kwargs)
                 self.children.append(child)
 
-                if isinstance(child, journal): self.Journals[child.name] = child
-                elif isinstance(child, entry): self.Entries.append(child)
+                if isinstance(child, journal):
+                    self.Journals[child.name] = child
+                elif isinstance(child, entry):
+                    self.Entries.append(child)
                 else:
                     raise NotImplementedError(
                         "I don't know where to store child type: {}".format(
@@ -277,13 +293,17 @@ class journal(_MJElement):
         level: The level of the hierarchy
         """
         if self.verbose:
-            print(u"{}{}\t({})".format("  "*level, self.name, len(self.Entries)))
+            print(u"{}{}\t({})".format("  "*level,
+                                       self.name, len(self.Entries)))
 
-        if   limit == 'journals': iterator = self.Journals.values()
-        elif limit == 'entries':  iterator = self.children
+        if limit == 'journals':
+            iterator = self.Journals.values()
+        elif limit == 'entries':
+            iterator = self.children
 
         # Write hierarchy for children
-        for child in iterator: child.hierarchy(limit=limit, level=level+1)
+        for child in iterator:
+            child.hierarchy(limit=limit, level=level+1)
 
     def MakeLaTeX(self, LT, texdir, level=0):
         """
@@ -300,12 +320,13 @@ class journal(_MJElement):
         if not os.path.isdir(self._texdir):
             os.mkdir(self._texdir)
 
-        texLevel = LaTeX.LaTeXLevels[level]
-        LT.lines.append( u"\n\n\\{}{{{}}}".format(texLevel, self.name ) )
+        texLevel = LT.LaTeXLevels[level]
+        LT.lines.append(u"\n\n\\{}{{{}}}".format(texLevel, self.name))
         self._includes = []
         # Iterate over all the journals and entries
         for child in self.children:
-            includes = child.MakeLaTeX(LT, self._texdir, level=level+1)
+            self._includes = child.MakeLaTeX(LT, self._texdir, level=level+1)
+
 
 class smart_journal(journal):
     """
@@ -329,6 +350,7 @@ class smart_journal(journal):
 #       for journal in self.Journals.values():
 #           journal.MakeLaTeX(self._texdir, level=level)
 
+
 class TrashJournal(journal):
     """
     TrashJournal is a special journal for the Trash journal.
@@ -338,6 +360,7 @@ class TrashJournal(journal):
         _parseContents doesn't do anything at the moment for a Trash Journal
         """
         print(" _parseContents doesn't do anything at the moment for Trash")
+
 
 class entry(_MJElement):
     """
@@ -349,10 +372,13 @@ class entry(_MJElement):
         topicElement = self.xml.getElementsByTagName('topic')
         if topicElement:
             self.topic = self.name = topicElement[0].firstChild.wholeText
+        else:
+            self.topic = self.name = ""
 
         # Prepare to find keywords
         keywordsElements = self.xml.getElementsByTagName('keywords')
-        if keywordsElements: self._keywordsElements = keywordsElements[0]
+        if keywordsElements:
+            self._keywordsElements = keywordsElements[0]
 
         self.content = \
             dict(self.xml.getElementsByTagName('content')[0].attributes.items())
@@ -380,7 +406,7 @@ class entry(_MJElement):
         """
         locElement = self.xml.getElementsByTagName('location')
         if locElement:
-            latitude = float( locElement[0].getAttribute('latitude') )
+            latitude = float(locElement[0].getAttribute('latitude'))
             return latitude
         else:
             return None
@@ -392,7 +418,7 @@ class entry(_MJElement):
         """
         locElement = self.xml.getElementsByTagName('location')
         if locElement:
-            longitude = float( locElement[0].getAttribute('longitude') )
+            longitude = float(locElement[0].getAttribute('longitude'))
             return longitude
         else:
             return None
@@ -409,7 +435,8 @@ class entry(_MJElement):
         lat = self.latitude()
         lon = self.longitude()
 
-        if lat == None: return None
+        if lat is None:
+            return None
         else:
             return (lat, lon)
 
@@ -418,7 +445,7 @@ class entry(_MJElement):
         Return the timezone value.
         """
         return (
-            self.xml.getElementsByTagName('time_zone')[0].firstChild.wholeText )
+            self.xml.getElementsByTagName('time_zone')[0].firstChild.wholeText)
 
     def hierarchy(self, limit='journals', level=0):
         """
@@ -446,8 +473,8 @@ class entry(_MJElement):
         self._texdir = texdir
         path = os.path.join(self._texdir, self.name)
 
-        texLevel = LaTeX.LaTeXLevels[level]
-        LT.lines.append( u"\n\n\\{}*{{{}}}".format(texLevel, self.name ) )
+        texLevel = LT.LaTeXLevels[level]
+        LT.lines.append(u"\n\n\\{}*{{{}}}".format(texLevel, self.name))
 
         return path
 
@@ -459,9 +486,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Extract Macjournal data")
     parser.add_argument('mjdoc', nargs='+', type=str,
-        help='MacJournal document location.')
+                        help='MacJournal document location.')
     parser.add_argument('--xml', type=str, default=None,
-        help='Write XML file for human readability')
+                        help='Write XML file for human readability')
 
     args = parser.parse_args()
 
